@@ -38,6 +38,13 @@ RUN apt-get -qq update && apt-get -qq -y install curl bzip2 \
 
 ENV PATH /opt/conda/bin:$PATH
 
+# External conda environment.
+# See: https://medium.com/@chadlagore/conda-environments-with-docker-82cdc9d25754
+COPY environment.yml .
+RUN conda env create -f environment.yml
+# Pull the environment name out of the environment.yml
+RUN echo "source activate $(head -1 /tmp/environment.yml | cut -d' ' -f2)" > ~/.bashrc
+ENV PATH /opt/conda/envs/$(head -1 /tmp/environment.yml | cut -d' ' -f2)/bin:$PATH
 
 ARG mpi4py=3.0.3
 ARG mpi4py_prefix=mpi4py-$mpi4py
@@ -50,5 +57,8 @@ RUN \
     python setup.py install                                                 && \
     cd ..                                                                    && \
     rm -rf $mpi4py_prefix
+
+# Dask MPI
+RUN conda install -c conda-forge --no-deps dask-mpi
 
 RUN /sbin/ldconfig
